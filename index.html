@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Tests en PHP - Rémi Alvado - Shopping Adventure</title>
+
+		<meta name="description" content="Présentation sur les tests en PHP pour les Buman Talks Grenoble">
+		<meta name="author" content="Rémi Alvado">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/sky.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+                <link rel="stylesheet" href="css/custom.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+                    document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+	<body>
+            <div class="reveal">        
+                <!-- Any section element inside of this container is displayed as a slide -->
+                <div class="slides">
+                    <section id="introduction">
+                        <h3>Le PHP pour les <del>nuls</del> professionnels - PART II</h3>
+                        <h1>Les Tests</h1>
+                        <p>
+                            <small><a href="mailto:remi.alvado@gmail.com">Rémi Alvado</a> / <a href="http://twitter.com/remialvado">@remialvado</a> / <a href="http://www.shoppingadventure.fr/">Shopping Adventure</a></small>
+                        </p>
+                    </section>
+                    
+                    <section id="principes">
+                        <p>Les principes restent identiques aux autres langages</p>
+                        <ol>
+                            <li class="fragment" data-next-fragment="500">Ecrire du <span class="fragment highlight-blue">Code Testable</span></li>
+                            <li class="fragment" data-next-fragment="500">Respect de la <span class="fragment highlight-blue">Pyramide des Tests</span></li>
+                            <li class="fragment" data-next-fragment="500">Faire du <span class="fragment highlight-blue">Test First</span></li>
+                        </ol>
+                    </section>
+                    
+                    <section id="unitaire">
+                        <h3>Tests Unitaires</h3>
+                        <p class="fragment fade-in" data-next-fragment="1000">Un seul outil qui domine : <span class="fragment fade-in" data-next-fragment="500"><span class="fragment highlight-blue">PHPUnit</span></span></p>
+                        <p class="fragment fade-in" data-next-fragment="500">Mise en place : </p>
+                        <pre class="fragment fade-in"><code class="language-javascript"># composer.json
+{
+    "name": "remi/test-php",
+    "require": {
+        "php": ">=5.3.3",
+        "phpunit/phpunit": "3.7.*"
+    }
+}</code></pre>
+                        <p class="fragment fade-in" data-next-fragment="500">Lancement : </p>
+                        <pre class="fragment fade-in"><code class="language-bash">myhost$ composer update
+myhost$ ./bin/phpunit</code></pre>
+                    </section>
+                    
+                    <section id="simple-case">
+                        <h3>Cas simple</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># Service/Greeting.php
+class Greeting {
+    function hello($name) {
+        return "hello " . $name;
+    }
+}
+</code></pre><pre class="fragment fade-in"><code class="language-php"># Tests/Service/GreetingTest.php
+class GreetingTest extends \PHPUnit_Framework_TestCase {
+
+    /** @test */
+    function hello() {
+        $greetings = new Greeting();
+        $this->assertEquals("hello jonathan", $greetings->hello("jonathan"));
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="mocks-1">
+                        <h3>Mocks PHPUnit 1/2</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># Service/Greeting.php
+class Greeting {
+    function hello($inputStream) {
+        return "hello " . $inputStream->getValue();
+    }
+}
+interface InputStream {
+    function getValue();
+}
+</code></pre><pre class="fragment fade-in"><code class="language-php"># Tests/Service/GreetingTests.php
+class GreetingTest extends \PHPUnit_Framework_TestCase {
+
+    /** @test */
+    function hello() {
+        $greeting = new Greeting();
+        $inputStream = $this->getMock("InputStream");
+        $inputStream->expects($this->once())
+                    ->method("getValue")
+                    ->will($this->returnValue("jonathan"));
+        $this->assertEquals("hello jonathan", $greeting->hello($inputStream));
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="mocks-2">
+                        <h3>Mocks PHPUnit 2/2</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># Service/Greeting.php
+class Greeting {
+    function hello($outputStream, $name) {
+        $outputStream->write("hello " . $name);
+    }
+}
+interface OutputStream {
+    function write($value);
+}
+</code></pre><pre class="fragment fade-in"><code class="language-php"># Tests/Service/GreetingTest.php
+class GreetingTest extends \PHPUnit_Framework_TestCase {
+
+    /** @test */
+    function hello() {
+        $greeting = new Greeting();
+        $outputStream = $this->getMock("OutputStream");
+        $outputStream->expects($this->once())
+                     ->method("write")
+                     ->with($this->eq("hello jonathan"));
+        $greeting->hello($outputStream, "jonathan");
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="mocks-3">
+                        <h3>Mocks Mockery</h3>
+                        <pre class="fragment fade-in"><code class="language-javascript"># composer.json
+{
+    "name": "remi/test-php",
+    "require": {
+        "php": ">=5.3.3",
+        "phpunit/phpunit": "3.7.*",
+        "mockery/mockery": "0.8.0"
+    }
+}</code></pre><pre class="fragment fade-in"><code class="language-php"># Tests/Service/GreetingTest.php
+class GreetingTest extends \PHPUnit_Framework_TestCase {
+
+    /** @test */
+    function hello() {
+        $greeting = new Greeting();
+        $inputStream = \Mockery::mock('myMockId');
+        $inputStream->shouldReceive('getValue')
+                    ->times(1)
+                    ->andReturn("jonathan");
+        $this->assertEquals("hello jonathan", $greeting->hello($inputStream));
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="hamcrest">
+                        <h3>Matchers Hamcrest</h3>
+                        <pre class="fragment fade-in"><code class="language-javascript"># composer.json
+{
+    "name": "remi/test-php",
+    "require": {
+        "php": ">=5.3.3",
+        "phpunit/phpunit": "3.7.*",
+        "hamcrest/hamcrest": "1.1.0"
+    }
+}</code></pre>
+                        <pre class="fragment fade-in"><code class="language-php"># Tests/Service/GreetingTest.php
+class GreetingTest extends \PHPUnit_Framework_TestCase {
+
+    /** @test */
+    function hello() {
+        $greeting = new Greeting();
+        assertThat($greeting->hello("jonathan"), is("hello jonathan"));
+        assertThat($greeting->hello("jonathan"), startsWith("hello"));
+        assertThat($greeting->hello("jonathan"), endsWith("jonathan"));
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="data-provider">
+                        <h3>Data Provider</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># Tests/Service/GreetingTest.php
+class GreetingTest extends \PHPUnit_Framework_TestCase {
+
+    function setup() {
+        $this->greeting = new Greeting();
+    }
+
+    /** 
+     * @test
+     * @dataProvider getPeopleWithGreetings
+     */
+    function hello($name, $message) {
+        assertThat($this->greeting->hello($name), is($message));
+    }
+
+    function getPeopleWithGreetings() {
+        return [
+            ["jonathan", "hello jonathan"],
+            ["victor",   "hello victor"],
+        ];
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="exception">
+                        <h3>Exceptions</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># Service/Greeting.php
+class Greeting {
+    function hello($name) {
+        if ($name === "remi") 
+            throws new LogicException("hey ! it's me ! silly tool...");
+        return "hello " . $name;
+    }
+}
+</code></pre><pre class="fragment fade-in"><code class="language-php"># Tests/Service/Greetings.php
+class GreetingTest extends \PHPUnit_Framework_TestCase {
+
+    /** 
+     * @test
+     * @expectedException LogicException
+     * @expectedExceptionMessage hey ! it's me ! silly tool...
+     */
+    function helloToSomeoneAlreadySeen() {
+        $greeting = new Greeting();
+        $greetings->hello("remi");
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="depends">
+                        <h3>Dependances entre tests</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># Tests/Model/StackTest.php
+class StackTest extends PHPUnit_Framework_TestCase {
+    public function testEmpty() {
+        $stack = array();
+        $this->assertEmpty($stack);
+        return $stack;
+    }
+
+    /** @depends testEmpty */
+    public function testPush(array $stack) {
+        array_push($stack, 'foo');
+        $this->assertEquals('foo', $stack[count($stack)-1]);
+        $this->assertNotEmpty($stack);
+        return $stack;
+    }
+</code></pre>
+                    </section>
+                    
+                    <section id="fonctionnels">
+                        <h3>Tests Fonctionnels</h3>
+                        <p class="fragment fade-in" data-next-fragment="1000">Un outil de BDD reconnu : <span class="fragment fade-in" data-next-fragment="500"><span class="fragment highlight-blue">Behat</span></span></p>
+                        <p class="fragment fade-in" data-next-fragment="500">Mise en place : </p>
+                        <pre class="fragment fade-in"><code class="language-javascript"># composer.json
+{
+    "name": "remi/test-php",
+    "require": {
+        "php": ">=5.3.3",
+        "behat/behat": "2.4.*@stable"
+    }
+}</code></pre>
+                        <p class="fragment fade-in" data-next-fragment="500">Lancement : </p>
+                        <pre class="fragment fade-in"><code class="language-bash">myhost$ composer update
+myhost$ ./bin/behat</code></pre>
+                    </section>
+                    
+                    <section id="feature">
+                        <h3>Feature</h3>
+                        <pre class="fragment fade-in"><code class="language-feature"># features/ls.feature
+Scenario: List 2 files in a directory
+  Given I am in a directory "test"
+  And I have a file named "foo"
+  And I have a file named "bar"
+  When I run "ls"
+  Then I should get:
+    """
+    bar
+    foo
+    """
+</code></pre>
+                    </section>
+                    
+                    <section id="step">
+                        <h3>Step</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># features/bootstrap/SystemSteps.php
+class SystemSteps extends BehatContext {
+    /**
+     * @Given /^I am in a directory "([^"]*)"$/
+     */
+    public function iAmInADirectory($dir) {
+        if (!file_exists($dir)) {
+            mkdir($dir);
+        }
+        chdir($dir);
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="step-assertions">
+                        <h3>Assertions</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># features/bootstrap/SystemSteps.php
+use Behat\Gherkin\Node\PyStringNode;
+
+class SystemSteps extends BehatContext {
+    /**
+     * @Then /^I should get:$/
+     */
+    public function iShouldGet(PyStringNode $string) {
+        // PHPUnit
+        $this->assertEquals($string->getRaw(), $this->output);
+        // Hamcrest
+        assertThat($string->getRaw(), is($this->output));
+        // Custom
+        if ($string->getRaw() !== $this->output)
+            throws new Exception("value is not expected");
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="mink">
+                        <h3>Web testing</h3>
+                        <pre class="fragment fade-in"><code class="language-javascript"># composer.json
+{
+    "name": "remi/test-php",
+    "require": {
+        "php": ">=5.3.3",
+        "behat/behat": "2.4.*@stable",
+        "behat/mink":  "1.4@stable"
+    }
+}</code></pre>
+                    </section>
+                    
+                    <section id="mink-step">
+                        <h3>Web crawling</h3>
+                        <pre class="fragment fade-in"><code class="language-php"># features/bootstrap/BrowserSteps.php
+class BrowserSteps extends BehatContext {
+    /**
+     * @Given /^I visit the page "([^"]*)"$/
+     */
+    public function iVisitThePage($url) {
+        $driver = new \Behat\Mink\Driver\ZombieDriver();
+        $this->session = new \Behat\Mink\Session($driver);
+        $this->session->visit($url);
+    }
+
+    /**
+     * @Given /^I search for "([^"]*)"$/
+     */
+    public function iSearchFor($query) {
+        $page = $this->session->getPage();
+        $page->find("#search > input[type=search]")->setValue($query);
+        $page->find("#search > input[type=submit]")->press();
+    }
+}
+</code></pre>
+                    </section>
+                    
+                    <section id="mink-browsers-support">
+                        <h3>Navigateurs supportés</h3>
+                        <ol>
+                            <li class="fragment fade-in" data-next-fragment="500"><span class="fragment highlight-blue" data-next-fragment="1000">Goutte</span> : web scraper</li>
+                            <li class="fragment fade-in" data-next-fragment="500"><span class="fragment highlight-blue" data-next-fragment="1000">Selenium 1 & 2</span></li>
+                            <li class="fragment fade-in" data-next-fragment="500"><span class="fragment highlight-blue" data-next-fragment="1000">Sahi</span></li>
+                            <li class="fragment fade-in" data-next-fragment="500"><span class="fragment highlight-blue" data-next-fragment="1000">Zombie</span> : headless browser sur nodejs</li>
+                        </ol>
+                    </section>
+                    
+                    <section id="questions">
+                        <h2>Questions ?</h2>
+                    </section>
+                    
+                </div>
+            </div>
+            <script src="lib/js/head.min.js"></script>
+            <script src="js/reveal.min.js"></script>
+
+            <script>
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+                        
+                        Reveal.addEventListener('fragmentshown', function(ev) {
+                            var current = ev.fragment;
+
+                            // activate next fragment automatically
+                            var autoFragment = current.getAttribute("data-next-fragment");
+                            if (autoFragment) {
+                                setTimeout(Reveal.nextFragment, autoFragment);
+                            }    
+                        });
+
+		</script>
+	</body>
+</html>
