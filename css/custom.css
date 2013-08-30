@@ -1,0 +1,20 @@
+del{
+    position: relative;
+    text-decoration: none;
+}
+
+del::after{
+    content: '';
+    border-bottom: 6px solid red;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+}
+
+.reveal pre, .reveal code {
+    border-radius: 15px;
+}
+.reveal pre code {
+    max-height: 600px;
+}
